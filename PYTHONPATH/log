@@ -1,0 +1,149 @@
+
+  +++++++++++++++++++++++++++++++++++
+  /home/wafeng/Programs/MY_SCR/pSAR_gmtsar_s1.py -roi [none in default, or in lonmin,lonmax,latmin,matmax ] 
+     -s1dir [] 
+     -dem [dem.grd, a full path required] 
+     -orbmodel [RESORB in default] 
+     -maxtimeint [128 days in default]
+     -list [None in default]
+     -ueof [will be open in default]
+     -nozip2orb [once it is set open, no pSAR_s1zips2orb.py is run.]
+     -clean
+     -i       0 in default, i or interp_flag 
+     -njob    [4 in default]
+     -pol     [vv in default] 
+     -iws     [None in default]
+     -unwrap_0 [0.01 in default for individual swath unwrapping setting]
+     -swathplot [False in default]
+     -flength [None, in default]
+     -rlook [8 in default]
+     -azlook [2 in default]
+     -roidir [None in default, a output folder for output ROI]
+     -unwrap_alg [fls or snaphu, snaphu in default]
+     -minnum [3 in default]
+     -noesd [flag for coregistration without ESD, false in default]
+     -season [None in default, if given, data in a similar season will be allowed for interferometry]
+     -sd [Starting Date, a parameter to use for filtering SAR data, 19991001 in default]
+     -ed [Ending Date, a parameter to use for filtering SAR data, 20901001 in default]
+     -switch_land [0 in default, 1 for masking water body out]
+  +++++++++++++++++++++++++++++++++++
+  To do interferomery with Sentinel-1 TOPS data by using GMT5SAR
+  starting from a given folder having Sentinel-1A/B zip files and dem grd file. 
+
+  Optional parameters:
+  -i       if an interpolation is required prior to unwrapping, 0 in default, which means NO interpolation.
+  -orbmodel 'resorb' or 'poeorb'
+  -tmpbase temporal baseline, 100 days in default
+  -list    optional, a list having pair time information
+  -ueof    optional, update eof(s) if given, True in default...
+  -clean   optional, to remove *.SLC and real*.grd to save space of the working folder.
+  -njob    4 in default, multiple tasks will be run in the same time... parallel (gnu) should be provided...
+  -master  None in default, YYYYMMDD will be only format that is support in this script.
+           If not given, the middle image will be suggested to use...
+  -pol     polarization band option, in default, vv is pre-set...
+  -iws     None default. if roi is given, iws will be estimated automatically based on roi polygon. Only overlapping swaths will be processed.
+           e.g. 1,1,1 means to process all three swaths...
+           Note if you have more than 3 swaths for some areas, we must go back here to update the script...
+  -unwrap_0 threshold for individual swaths... in default, unwrapping...
+  -unwrap_1 threshold for merged interferograms, in default, 0.15 will be set...
+  *
+  -flength  filtering length, 200 in default
+            The output resolution will be calculated approximatedly by <flength>/4
+            
+  -rlook    multilooking size in range, 8 in default
+  -azlook   multilooking size in azimuth, 2 in default
+  -update   False in default. If given, update will be reset to be True
+  -st       starting step, in default 0
+            st<=1 building dem for insar
+            st<=2 unzip S1*.zip to the given folder ...
+            ...
+  -et       ending step, in default xxx
+            Details of steps applied in the processing:
+              step 0: link dem into the local folder
+              step 1: link zip into the local folder
+              step 2: unzip S1*.zip in the local folder
+              ...
+  -demonly  flag to create dem only, False in default
+  -datadir  path for unzipping and burst cutting... DATA/ is in default.
+  -rawdir   path for cutted S1 data, raw/ in default.
+  -topodir  path for srtm dem data, topo/ in default.
+  -zipcheck optional, 0 for no check, 1 for yes...
+  -season   optional, 12,24,36... days
+
+  #
+  Data orbit data in RESORB model will be collected automatically based on the data temporal coverage.
+  In default, three swaths will be processed separately in F1, F2 and F3 three subfolders.
+  
+  
+   
+  first developed by Wanpeng Feng, @CCRS/NRCan, 2018-05-16
+  
+  + an almost new version was ready to handle data cropping 
+  Updated by FWP, @SYSU, Guangzhou, 2020/01/01
+  + 
+  + a list file can be allowed since this version.
+  + if a list is given, only specific pairs are processed.
+  Updated by FWP, @SYSU, Guangzhou, 2020/01/04
+
+  +ueof should be always set as True for a more robust automation...
+
+  **** NOTICE ******
+  A bug was found in the version before 2020/02/13
+  previously, manifest(s) were roughly sorted with <list>.sort()
+  so for those with S1A and S1B pair, S1A acquisition will also be processed first...
+  This is certainly wrong. Since this version(2020/02/13), pS1.s1manifestsort()
+  is used to sort manifest(s) by date only...
+  
+  Updated by FWP, @SYSU, Guangzhou, 2020/02/13
+  -roidir a path for output, if give, results will be sent to <roi_dir> in ROI_PAC format...
+          None in default.
+  #
+  Updated by FWP, @SYSU, Guangzhou, 2020/05/28
+  #
+  since this version, the step control has been applied, which allow to redo specific steps without repeating other steps before
+  This could be very useful if the origianl unzipped SLCs are too huge. This will allow users to save some space...
+
+  Updated by FWP, @SYSU, Guangzhou, 2020/07/29
+  #
+  + Two improvements were made in this version:
+    1) dem is not necessary to be given during the processing. The latest version will make dem data automatically based on the SLC data.
+    2) re-set ROI to make selected bursts in adjacent swaths to look identical in height.
+    3) we can modify iws.in, which can help re-organize the bursts that are required to process.
+  Updated by FWP, @SYSU, Guangzhou, 2020/08/10
+  # 
+  Updated by FWP, @SYSU, Guangzhou, 2021/01/03
+  + 
+      -datadir is available since this version, which is temporarily used to store zip and unzipped S1 data.
+      -rawdir  is available since this version, which is temporarily used to store cutted S1 data.
+      -topodir is available since this version, which is temporarily used to store dem data.
+
+  Updated by FWP, @SYSU, Zhuhai, 2021/01/07
+  + 
+      -zipcheck optional for pre-check on whether the input zip is legal... which could be time consuming...
+                0 in default, which means no check is conducted.
+  
+  Updated by FWP, @SYSU, Guangzhou, 2021/01/19
+      -nozip2orb, once this is open, it is not in default to run pSAR_s1zips2orb.py 
+  
+  Updated by FWP, @SYSU, Guangzhou, 2021/02/23
+      -unwrap_alg, a new parameter to specify the unwrapping algorithm applied in the processing.
+                   snaphu and fls can be optionally selected for use during unwrapping. snaphu is set in default.
+                   Meanwhile, since this version, the data gap of non data in phase.grd will be interpolated using gdal_fillnodata.py
+  
+  Updated by FWP, @SYSU, Guangzhou, 2021/03/03
+      -flength, filter length defined based on azlook in default
+      -minnum,  minimum number of interferograms from an individual master date
+  
+  Updated by FWP, @SYSU, Guangzhou, 2021/07/31
+      "inp_copy_dir" can be pre-set in F<x> to store potential processed pairs. If "in_copy_dir" exists and it is NOT empty, the inps inside will be copied out and start running gmtsar processing for those pairs only.
+      Note that the folder of "inp_copy_dir" could be generated beforehand of the pSAR_gmtsar_s1.py by running pSAR_gmtsar_inlist2INTFinp.py, which will detect in.list in F<x> folder(s).
+  
+  Updated by FWP, @SYSU, Guangzhou, 2021/08/24
+     -noesd available to switch to non-esd coregistration mode
+
+  ---
+  Updated by Wanpeng Feng, @SYSU, Guangzhou, 2021/09/14
+     -swith_land available since this version...
+  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  
